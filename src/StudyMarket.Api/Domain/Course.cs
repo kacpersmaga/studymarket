@@ -1,0 +1,60 @@
+namespace StudyMarket.Api.Domain;
+
+// Etap edukacji wg polskiego systemu szkolnictwa; klasa (Grade) doprecyzowuje poziom.
+public enum SchoolLevel { PrimarySchool, SecondarySchool, University }
+
+// Struktura treści: Kurs -> Moduły -> Lekcje -> (notatka, wideo, załączniki, fiszki, quiz, zadania).
+public class Course
+{
+    public int Id { get; set; }
+    public int AuthorId { get; set; }
+    public User Author { get; set; } = null!;
+    public required string Title { get; set; }
+    public string Description { get; set; } = "";
+    public required string Subject { get; set; }
+    public SchoolLevel Level { get; set; }
+    public int? Grade { get; set; }
+    public decimal Price { get; set; }
+    public bool IsPublished { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public List<Module> Modules { get; set; } = [];
+}
+
+public class Module
+{
+    public int Id { get; set; }
+    public int CourseId { get; set; }
+    public Course Course { get; set; } = null!;
+    public required string Title { get; set; }
+    public int Position { get; set; }
+    public List<Lesson> Lessons { get; set; } = [];
+}
+
+public class Lesson
+{
+    public int Id { get; set; }
+    public int ModuleId { get; set; }
+    public Module Module { get; set; } = null!;
+    public required string Title { get; set; }
+    public string Content { get; set; } = "";  // notatka (Markdown)
+    public int Position { get; set; }
+    public List<Flashcard> Flashcards { get; set; } = [];
+    public List<QuizQuestion> QuizQuestions { get; set; } = [];
+}
+
+public class Flashcard
+{
+    public int Id { get; set; }
+    public int LessonId { get; set; }
+    public required string Front { get; set; }
+    public required string Back { get; set; }
+}
+
+public class QuizQuestion
+{
+    public int Id { get; set; }
+    public int LessonId { get; set; }
+    public required string Text { get; set; }
+    public List<string> Options { get; set; } = [];
+    public int CorrectOption { get; set; }
+}
