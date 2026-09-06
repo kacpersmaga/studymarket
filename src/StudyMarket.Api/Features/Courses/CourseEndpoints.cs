@@ -43,11 +43,16 @@ public static class CourseEndpoints
         group.MapPost("/{id:int}/unpublish", (int id, AppDbContext db, ClaimsPrincipal user) => SetPublished(id, false, db, user)).RequireAuthorization();
     }
 
-    // Katalog: tylko opublikowane kursy.
+    // Katalog: tylko opublikowane kursy, z opcjonalnym filtrowaniem.
     static async Task<Ok<List<CourseSummary>>> GetCatalog(
-        AppDbContext db)
+        AppDbContext db, string? subject, SchoolLevel? level, int? grade, string? search)
     {
         var query = db.Courses.Where(c => c.IsPublished);
+        if (subject is not null) query = query.Where(c => c.Subject == subject);
+        if (level is not null) query = query.Where(c => c.Level == level);
+        if (grade is not null) query = query.Where(c => c.Grade == grade);
+        if (search is not null) // wąskie kursy "z jednego tematu" muszą być łatwe do znalezienia, więc szukamy też w opisie
+            query = query.Where(c => c.Title.ToLower().Contains(search.ToLower()) || c.Description.ToLower().Contains(search.ToLower()));
 
         return TypedResults.Ok(await query.OrderByDescending(c => c.CreatedAt).Select(ToSummary).ToListAsync());
     }
