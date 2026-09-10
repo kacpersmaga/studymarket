@@ -127,6 +127,8 @@ public static class CourseEndpoints
         var course = await db.Courses.FindAsync(id);
         if (course is null) return TypedResults.NotFound();
         if (!user.CanEdit(course)) return TypedResults.Forbid();
+        if (publish && !await db.Lessons.AnyAsync(l => l.Module.CourseId == id))
+            return TypedResults.Problem("Nie można opublikować kursu bez lekcji.", statusCode: 400);
 
         course.IsPublished = publish;
         await db.SaveChangesAsync();
