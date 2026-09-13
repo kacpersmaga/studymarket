@@ -79,4 +79,16 @@ public class CourseTests(ApiFactory api)
         Assert.Single(lesson.Quiz);
         Assert.Equal(1, lesson.Quiz[0].CorrectOption); // autor widzi poprawne odpowiedzi
     }
+
+    [Fact]
+    public async Task Course_with_orders_cannot_be_deleted()
+    {
+        var creator = await api.CreateClientAsync(Role.Creator);
+        var (courseId, _) = await CreateCourseAsync(creator);
+        await OrderAsync(await api.CreateClientAsync(Role.Student), courseId);
+
+        var response = await creator.DeleteAsync($"/api/courses/{courseId}");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
 }

@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using StudyMarket.Api.Domain;
 using StudyMarket.Api.Features.Courses;
+using StudyMarket.Api.Features.Orders;
 
 namespace StudyMarket.Tests.Integration;
 
@@ -25,5 +26,12 @@ public static class TestData
             .Content.ReadFromJsonAsync<IdResponse>();
         if (publish) (await creator.PostAsync($"/api/courses/{course.Id}/publish", null)).EnsureSuccessStatusCode();
         return (course.Id, lesson!.Id);
+    }
+
+    public static async Task<OrderDto> OrderAsync(HttpClient buyer, int courseId)
+    {
+        var response = await buyer.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId));
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<OrderDto>(ApiFactory.Json))!;
     }
 }

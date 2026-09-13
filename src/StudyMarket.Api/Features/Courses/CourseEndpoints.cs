@@ -115,6 +115,8 @@ public static class CourseEndpoints
         var course = await db.Courses.FindAsync(id);
         if (course is null) return TypedResults.NotFound();
         if (!user.CanEdit(course)) return TypedResults.Forbid();
+        if (await db.Orders.AnyAsync(o => o.CourseId == id))
+            return TypedResults.Problem("Kursu z zamówieniami nie można usunąć - można go wycofać ze sprzedaży.", statusCode: 409);
 
         db.Courses.Remove(course);
         await db.SaveChangesAsync();
