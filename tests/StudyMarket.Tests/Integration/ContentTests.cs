@@ -60,4 +60,19 @@ public class ContentTests(ApiFactory api)
         Assert.Contains(matching!, c => c.Id == courseId);
         Assert.DoesNotContain(otherGrade!, c => c.Id == courseId);
     }
+
+    [Fact]
+    public async Task Unpublished_course_leaves_catalog_but_buyers_keep_access()
+    {
+        var creator = await api.CreateClientAsync(Role.Creator);
+        var (courseId, lessonId) = await CreateCourseAsync(creator);
+        var buyer = await api.CreateClientAsync(Role.Student);
+        await PurchaseAsync(api, buyer, courseId);
+
+        await creator.PostAsync($"/api/courses/{courseId}/unpublish", null);
+
+        var catalog = await api.CreateClient().GetFromJsonAsync<List<CourseSummary>>("/api/courses", ApiFactory.Json);
+        Assert.DoesNotContain(catalog!, c => c.Id == courseId);
+        Assert.Equal(HttpStatusCode.OK, (await buyer.GetAsync($"/api/lessons/{lessonId}")).StatusCode);
+    }
 }

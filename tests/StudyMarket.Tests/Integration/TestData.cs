@@ -34,4 +34,12 @@ public static class TestData
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<OrderDto>(ApiFactory.Json))!;
     }
+
+    // Zamówienie + potwierdzenie płatności webhookiem Stripe.
+    public static async Task<int> PurchaseAsync(ApiFactory api, HttpClient buyer, int courseId)
+    {
+        var order = await OrderAsync(buyer, courseId);
+        (await api.SendStripeEventAsync(order.Id)).EnsureSuccessStatusCode();
+        return order.Id;
+    }
 }

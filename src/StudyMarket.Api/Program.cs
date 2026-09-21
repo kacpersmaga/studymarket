@@ -66,5 +66,6 @@ app.MapAuthEndpoints();
 app.MapCourseEndpoints();
 app.MapContentEndpoints();
 app.MapOrderEndpoints();
+app.MapPaymentEndpoints();
 
 app.Run();

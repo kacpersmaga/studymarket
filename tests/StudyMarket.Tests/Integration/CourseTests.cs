@@ -51,6 +51,26 @@ public class CourseTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task Course_details_tell_frontend_which_button_to_show()
+    {
+        var creator = await api.CreateClientAsync(Role.Creator);
+        var (courseId, _) = await CreateCourseAsync(creator);
+        var buyer = await api.CreateClientAsync(Role.Student);
+        await PurchaseAsync(api, buyer, courseId);
+
+        async Task<(bool, bool)> FlagsFor(HttpClient client)
+        {
+            var details = await client.GetFromJsonAsync<CourseDetails>($"/api/courses/{courseId}", ApiFactory.Json);
+            return (details!.CanEdit, details.HasAccess);
+        }
+
+        Assert.Equal((false, false), await FlagsFor(api.CreateClient()));                       // gość: "Kup"
+        Assert.Equal((false, false), await FlagsFor(await api.CreateClientAsync(Role.Student))); // zalogowany: "Kup"
+        Assert.Equal((false, true), await FlagsFor(buyer));                                     // kupujący: "Ucz się"
+        Assert.Equal((true, true), await FlagsFor(creator));                                    // autor: "Edytuj"
+    }
+
+    [Fact]
     public async Task Draft_course_is_hidden_from_others()
     {
         var (courseId, _) = await CreateCourseAsync(await api.CreateClientAsync(Role.Creator), publish: false);

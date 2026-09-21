@@ -1,5 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Hosting;
@@ -20,6 +22,7 @@ namespace StudyMarket.Tests.Integration;
 public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string Password = "Haslo123!";
+    public const string WebhookSecret = "whsec_test_secret";
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
 
     private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:18").Build();
@@ -41,6 +44,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Default", ConnectionString);
+        builder.UseSetting("Stripe:WebhookSecret", WebhookSecret);
     }
 
     public static RegisterRequest NewUser(Role role = Role.Student) =>
@@ -70,5 +74,25 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         using var scope = Services.CreateScope();
         await action(scope.ServiceProvider.GetRequiredService<AppDbContext>());
+    }
+
+    // Wysyła zdarzenie tak, jak zrobiłby to Stripe: JSON + nagłówek z podpisem HMAC-SHA256.
+    public Task<HttpResponseMessage> SendStripeEventAsync(int orderId, string secret = WebhookSecret,
+        string type = "checkout.session.completed", string paymentStatus = "paid")
+    {
+        var json = """
+            {"id":"evt_test","object":"event","api_version":"2025-01-01","type":"EVENT_TYPE",
+             "data":{"object":{"id":"cs_test","object":"checkout.session","payment_status":"PAYMENT_STATUS","metadata":{"orderId":"ORDER_ID"}}}}
+            """.Replace("ORDER_ID", orderId.ToString()).Replace("EVENT_TYPE", type).Replace("PAYMENT_STATUS", paymentStatus);
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var signature = Convert.ToHexStringLower(
+            HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes($"{timestamp}.{json}")));
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/payments/stripe-webhook")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Add("Stripe-Signature", $"t={timestamp},v1={signature}");
+        return CreateClient().SendAsync(request);
     }
 }
