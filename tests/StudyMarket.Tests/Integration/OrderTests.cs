@@ -67,4 +67,19 @@ public class OrderTests(ApiFactory api)
         Assert.Equal(OrderStatus.Pending, afterCompleted);
         Assert.Equal(OrderStatus.Paid, afterAsync);
     }
+
+    [Fact]
+    public async Task Creator_earnings_include_platform_commission()
+    {
+        var creator = await api.CreateClientAsync(Role.Creator);
+        var (courseId, _) = await CreateCourseAsync(creator); // 49,99 zł
+        await PurchaseAsync(api, await api.CreateClientAsync(Role.Student), courseId);
+        await PurchaseAsync(api, await api.CreateClientAsync(Role.Student), courseId);
+        await OrderAsync(await api.CreateClientAsync(Role.Student), courseId); // nieopłacone - nie liczy się
+
+        var earnings = await creator.GetFromJsonAsync<List<CourseEarnings>>("/api/creator/earnings");
+
+        // prowizja 15%: 49,99 * 0,15 = 7,50 zł od sztuki
+        Assert.Equal(new CourseEarnings(courseId, SampleCourse.Title, 2, 99.98m, 15.00m, 84.98m), earnings!.Single());
+    }
 }

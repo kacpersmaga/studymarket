@@ -24,3 +24,12 @@ public class AccessTests
     public void Anonymous_user_cannot_edit() => Assert.False(new ClaimsPrincipal(new ClaimsIdentity()).CanEdit(_course));
 }
 
+public class CommissionTests
+{
+    [Theory]
+    [InlineData(100, 15, 15)]
+    [InlineData(49.99, 15, 7.50)] // 7,4985 -> zaokrąglenie do groszy
+    [InlineData(2, 15, 0.30)]
+    public void Fee_is_rounded_to_grosze(decimal price, decimal percent, decimal expected) =>
+        Assert.Equal(expected, Order.CalculateFee(price, percent));
+}

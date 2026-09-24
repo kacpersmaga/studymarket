@@ -10,6 +10,8 @@ public record CreateOrderRequest(int CourseId);
 
 public record OrderDto(int Id, int CourseId, string CourseTitle, decimal Price, OrderStatus Status, DateTime CreatedAt, DateTime? PaidAt);
 
+public record CourseEarnings(int CourseId, string Title, int Sales, decimal Gross, decimal PlatformFee, decimal Net);
+
 public static class OrderEndpoints
 {
     public static void MapOrderEndpoints(this IEndpointRouteBuilder app)
@@ -17,6 +19,9 @@ public static class OrderEndpoints
         var group = app.MapGroup("/api/orders").WithTags("Orders").RequireAuthorization();
         group.MapGet("/", GetMyOrders);
         group.MapPost("/", CreateOrder);
+
+        app.MapGet("/api/creator/earnings", GetEarnings).WithTags("Orders")
+            .RequireAuthorization(p => p.RequireRole(nameof(Role.Creator), nameof(Role.Admin)));
     }
 
     static async Task<Ok<List<OrderDto>>> GetMyOrders(AppDbContext db, ClaimsPrincipal user)
@@ -30,7 +35,7 @@ public static class OrderEndpoints
 
     // Tworzy zamówienie oczekujące na płatność. Płatność rozpoczyna się w PaymentEndpoints (checkout).
     static async Task<Results<Created<OrderDto>, NotFound, ProblemHttpResult>> CreateOrder(
-        CreateOrderRequest request, AppDbContext db, ClaimsPrincipal user)
+        CreateOrderRequest request, AppDbContext db, ClaimsPrincipal user, IConfiguration config)
     {
         var userId = user.GetUserId();
         var course = await db.Courses.FindAsync(request.CourseId);
@@ -43,11 +48,24 @@ public static class OrderEndpoints
         var order = new Order
         {
             UserId = userId, CourseId = course.Id, Price = course.Price, Status = OrderStatus.Pending,
+            PlatformFee = Order.CalculateFee(course.Price, config.GetValue<decimal>("Platform:CommissionPercent")),
         };
         db.Orders.Add(order);
         await db.SaveChangesAsync();
 
         return TypedResults.Created($"/api/orders/{order.Id}",
             new OrderDto(order.Id, course.Id, course.Title, order.Price, order.Status, order.CreatedAt, order.PaidAt));
+    }
+
+    // Zestawienie sprzedaży twórcy: przychód brutto, prowizja platformy i kwota należna twórcy.
+    static async Task<Ok<List<CourseEarnings>>> GetEarnings(AppDbContext db, ClaimsPrincipal user)
+    {
+        var userId = user.GetUserId();
+        return TypedResults.Ok(await db.Orders
+            .Where(o => o.Status == OrderStatus.Paid && o.Course.AuthorId == userId)
+            .GroupBy(o => new { o.CourseId, o.Course.Title })
+            .Select(g => new CourseEarnings(g.Key.CourseId, g.Key.Title, g.Count(),
+                g.Sum(o => o.Price), g.Sum(o => o.PlatformFee), g.Sum(o => o.Price - o.PlatformFee)))
+            .ToListAsync());
     }
 }
