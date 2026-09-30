@@ -10,6 +10,7 @@ using StudyMarket.Api.Domain;
 using StudyMarket.Api.Features.Auth;
 using StudyMarket.Api.Features.Courses;
 using StudyMarket.Api.Features.Orders;
+using StudyMarket.Api.Features.Progress;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -67,5 +68,6 @@ app.MapCourseEndpoints();
 app.MapContentEndpoints();
 app.MapOrderEndpoints();
 app.MapPaymentEndpoints();
+app.MapProgressEndpoints();
 
 app.Run();

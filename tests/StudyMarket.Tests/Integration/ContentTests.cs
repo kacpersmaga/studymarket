@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using StudyMarket.Api.Domain;
 using StudyMarket.Api.Features.Courses;
+using StudyMarket.Api.Features.Progress;
 using static StudyMarket.Tests.Integration.TestData;
 
 namespace StudyMarket.Tests.Integration;
@@ -74,5 +75,17 @@ public class ContentTests(ApiFactory api)
         var catalog = await api.CreateClient().GetFromJsonAsync<List<CourseSummary>>("/api/courses", ApiFactory.Json);
         Assert.DoesNotContain(catalog!, c => c.Id == courseId);
         Assert.Equal(HttpStatusCode.OK, (await buyer.GetAsync($"/api/lessons/{lessonId}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Learning_features_require_purchase()
+    {
+        var (courseId, lessonId) = await CreateCourseAsync(await api.CreateClientAsync(Role.Creator));
+        var stranger = await api.CreateClientAsync(Role.Student);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.PostAsync($"/api/lessons/{lessonId}/complete", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.PostAsJsonAsync($"/api/lessons/{lessonId}/quiz", new QuizSubmission([]))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/api/courses/{courseId}/progress")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await api.CreateClient().GetAsync($"/api/lessons/{lessonId}")).StatusCode);
     }
 }

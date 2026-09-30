@@ -40,6 +40,10 @@ public class Lesson
     public int Position { get; set; }
     public List<Flashcard> Flashcards { get; set; } = [];
     public List<QuizQuestion> QuizQuestions { get; set; } = [];
+
+    // answers: identyfikator pytania -> indeks wybranej odpowiedzi.
+    public int CountCorrectAnswers(IReadOnlyDictionary<int, int> answers) =>
+        QuizQuestions.Count(q => answers.TryGetValue(q.Id, out var chosen) && chosen == q.CorrectOption);
 }
 
 public class Flashcard

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using StudyMarket.Api.Domain;
 using StudyMarket.Api.Features.Courses;
+using StudyMarket.Api.Features.Progress;
 using static StudyMarket.Tests.Integration.TestData;
 
 namespace StudyMarket.Tests.Integration;
@@ -98,6 +99,39 @@ public class CourseTests(ApiFactory api)
         Assert.Empty(lesson!.Flashcards);
         Assert.Single(lesson.Quiz);
         Assert.Equal(1, lesson.Quiz[0].CorrectOption); // autor widzi poprawne odpowiedzi
+    }
+
+    [Fact]
+    public async Task Purchase_gives_access_to_content_and_progress_tracking()
+    {
+        var (courseId, lessonId) = await CreateCourseAsync(await api.CreateClientAsync(Role.Creator));
+        var student = await api.CreateClientAsync(Role.Student);
+
+        // Kurs jest w katalogu, ale bez zakupu treść jest niedostępna.
+        var catalog = await student.GetFromJsonAsync<List<CourseSummary>>("/api/courses?subject=Chemia", ApiFactory.Json);
+        Assert.Contains(catalog!, c => c.Id == courseId);
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.GetAsync($"/api/lessons/{lessonId}")).StatusCode);
+
+        // Samo zamówienie (bez potwierdzenia płatności) nie daje dostępu.
+        var order = await OrderAsync(student, courseId);
+        Assert.Equal(OrderStatus.Pending, order.Status);
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.GetAsync($"/api/lessons/{lessonId}")).StatusCode);
+
+        // Po potwierdzeniu płatności przez Stripe - pełna lekcja, ale bez poprawnych odpowiedzi quizu.
+        (await api.SendStripeEventAsync(order.Id)).EnsureSuccessStatusCode();
+        var lesson = await student.GetFromJsonAsync<LessonDetails>($"/api/lessons/{lessonId}");
+        Assert.All(lesson!.Quiz, q => Assert.Null(q.CorrectOption));
+
+        // Quiz: jedna z dwóch odpowiedzi poprawna.
+        var answers = new QuizSubmission(new() { [lesson.Quiz[0].Id] = 1, [lesson.Quiz[1].Id] = 1 });
+        var result = await (await student.PostAsJsonAsync($"/api/lessons/{lessonId}/quiz", answers)).Content.ReadFromJsonAsync<QuizResult>();
+        Assert.Equal(new QuizResult(1, 2, 50), result);
+
+        // Ukończenie jedynej lekcji = 100% kursu.
+        await student.PostAsync($"/api/lessons/{lessonId}/complete", null);
+        var progress = await student.GetFromJsonAsync<CourseProgress>($"/api/courses/{courseId}/progress");
+        Assert.Equal(100, progress!.Percent);
+        Assert.Equal(50, progress.Lessons.Single().BestQuizScore);
     }
 
     [Fact]

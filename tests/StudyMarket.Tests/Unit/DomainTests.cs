@@ -1,8 +1,30 @@
 using System.Security.Claims;
 using StudyMarket.Api.Domain;
 using StudyMarket.Api.Features;
+using StudyMarket.Api.Features.Progress;
 
 namespace StudyMarket.Tests.Unit;
+
+public class QuizScoringTests
+{
+    private readonly Lesson _lesson = new()
+    {
+        Title = "Ułamki",
+        QuizQuestions =
+        [
+            new() { Id = 1, Text = "1/2 + 1/2 = ?", Options = ["1", "2"], CorrectOption = 0 },
+            new() { Id = 2, Text = "1/4 * 2 = ?", Options = ["1/8", "1/2"], CorrectOption = 1 },
+        ],
+    };
+
+    [Fact]
+    public void Counts_only_correct_answers() =>
+        Assert.Equal(1, _lesson.CountCorrectAnswers(new Dictionary<int, int> { [1] = 0, [2] = 0 }));
+
+    [Fact]
+    public void Missing_answers_are_counted_as_wrong() =>
+        Assert.Equal(0, _lesson.CountCorrectAnswers(new Dictionary<int, int>()));
+}
 
 public class AccessTests
 {
@@ -22,6 +44,16 @@ public class AccessTests
 
     [Fact]
     public void Anonymous_user_cannot_edit() => Assert.False(new ClaimsPrincipal(new ClaimsIdentity()).CanEdit(_course));
+}
+
+public class CourseProgressTests
+{
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(1, 3, 33)]
+    [InlineData(4, 4, 100)]
+    public void Percent_is_rounded_down(int completed, int total, int expected) =>
+        Assert.Equal(expected, new CourseProgress(1, completed, total, []).Percent);
 }
 
 public class CommissionTests
