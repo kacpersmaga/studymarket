@@ -11,9 +11,10 @@ public static class TestData
     public static readonly CourseRequest SampleCourse =
         new("Matura z chemii: stechiometria", "Zadania maturalne krok po kroku", "Chemia", SchoolLevel.SecondarySchool, 4, 49.99m);
 
-    public static readonly LessonRequest SampleLesson = new("Mol i masa molowa", "Notatka do lekcji", 1,
+    public static readonly LessonRequest SampleLesson = new("Mol i masa molowa", "Notatka do lekcji", "https://youtu.be/abc", 1,
         [new FlashcardDto("1 mol", "6,02 · 10^23 drobin")],
-        [new QuizQuestionRequest("Masa molowa H2O?", ["16 g/mol", "18 g/mol"], 1), new QuizQuestionRequest("Ile to 2*3?", ["6", "5"], 0)]);
+        [new QuizQuestionRequest("Masa molowa H2O?", ["16 g/mol", "18 g/mol"], 1), new QuizQuestionRequest("Ile to 2*3?", ["6", "5"], 0)],
+        [new ExerciseDto("Oblicz liczbę moli w 36 g wody.", "36 g / 18 g/mol = 2 mol")]);
 
     // Tworzy kurs z jednym modułem i jedną lekcją. Zwraca (idKursu, idLekcji).
     public static async Task<(int CourseId, int LessonId)> CreateCourseAsync(HttpClient creator, bool publish = true)

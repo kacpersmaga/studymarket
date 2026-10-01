@@ -31,6 +31,7 @@ public class ContentTests(ApiFactory api)
 
     [Theory]
     [InlineData("quiz")]  // indeks poprawnej odpowiedzi spoza listy opcji
+    [InlineData("video")] // niepoprawny adres filmu
     [InlineData("title")] // brak tytułu
     public async Task Invalid_lesson_is_rejected(string invalidPart)
     {
@@ -39,6 +40,7 @@ public class ContentTests(ApiFactory api)
         var lesson = invalidPart switch
         {
             "quiz" => SampleLesson with { Quiz = [new QuizQuestionRequest("Pytanie", ["A", "B"], 5)] },
+            "video" => SampleLesson with { VideoUrl = "to-nie-jest-adres" },
             _ => SampleLesson with { Title = "" },
         };
 

@@ -9,15 +9,19 @@ namespace StudyMarket.Api.Features.Courses;
 
 public record ModuleRequest([Required, MaxLength(200)] string Title, int Position);
 
-// Lekcja jest zapisywana w całości razem z fiszkami i quizem - jeden formularz po stronie frontendu.
+// Lekcja jest zapisywana w całości razem z fiszkami, quizem i zadaniami - jeden formularz po stronie frontendu.
 public record LessonRequest(
     [Required, MaxLength(200)] string Title,
     string? Content,
+    [Url] string? VideoUrl,
     int Position,
     List<FlashcardDto>? Flashcards,
-    List<QuizQuestionRequest>? Quiz);
+    List<QuizQuestionRequest>? Quiz,
+    List<ExerciseDto>? Exercises);
 
 public record FlashcardDto([Required] string Front, [Required] string Back);
+
+public record ExerciseDto([Required] string Text, [Required] string Solution);
 
 public record QuizQuestionRequest([Required] string Text, [MinLength(2)] List<string> Options, int CorrectOption)
     : IValidatableObject
@@ -32,9 +36,10 @@ public record QuizQuestionRequest([Required] string Text, [MinLength(2)] List<st
 // CorrectOption jest widoczne tylko dla edytujących, żeby kupujący nie widzieli odpowiedzi.
 public record QuizQuestionDto(int Id, string Text, List<string> Options, int? CorrectOption);
 
+// Rozwiązania zadań są zwracane - służą do samosprawdzenia (frontend pokazuje je na żądanie).
 public record LessonDetails(
-    int Id, int CourseId, string Title, string Content, int Position,
-    List<FlashcardDto> Flashcards, List<QuizQuestionDto> Quiz);
+    int Id, int CourseId, string Title, string Content, string? VideoUrl, int Position,
+    List<FlashcardDto> Flashcards, List<QuizQuestionDto> Quiz, List<ExerciseDto> Exercises);
 
 public record IdResponse(int Id);
 
@@ -113,10 +118,11 @@ public static class ContentEndpoints
 
         var canEdit = user.CanEdit(course);
 
-        return TypedResults.Ok(new LessonDetails(lesson.Id, course.Id, lesson.Title, lesson.Content, lesson.Position,
+        return TypedResults.Ok(new LessonDetails(lesson.Id, course.Id, lesson.Title, lesson.Content, lesson.VideoUrl, lesson.Position,
             lesson.Flashcards.Select(f => new FlashcardDto(f.Front, f.Back)).ToList(),
             lesson.QuizQuestions.OrderBy(q => q.Id)
-                .Select(q => new QuizQuestionDto(q.Id, q.Text, q.Options, canEdit ? q.CorrectOption : null)).ToList()));
+                .Select(q => new QuizQuestionDto(q.Id, q.Text, q.Options, canEdit ? q.CorrectOption : null)).ToList(),
+            lesson.Exercises.OrderBy(e => e.Id).Select(e => new ExerciseDto(e.Text, e.Solution)).ToList()));
     }
 
     static async Task<Results<NoContent, NotFound, ForbidHttpResult>> UpdateLesson(
@@ -146,15 +152,18 @@ public static class ContentEndpoints
         .Include(l => l.Module).ThenInclude(m => m.Course)
         .Include(l => l.Flashcards)
         .Include(l => l.QuizQuestions)
+        .Include(l => l.Exercises)
         .AsSplitQuery() // osobne zapytania zamiast jednego JOIN-a mnożącego wiersze
         .SingleOrDefaultAsync(l => l.Id == id);
 
-    // Fiszki i pytania są zastępowane w całości - EF Core usuwa stare wiersze i dodaje nowe.
+    // Fiszki, pytania i zadania są zastępowane w całości - EF Core usuwa stare wiersze i dodaje nowe.
     static void Apply(LessonRequest request, Lesson lesson)
     {
         lesson.Title = request.Title;
         lesson.Content = request.Content ?? "";
+        lesson.VideoUrl = request.VideoUrl;
         lesson.Position = request.Position;
+        lesson.Exercises = (request.Exercises ?? []).Select(e => new Exercise { Text = e.Text, Solution = e.Solution }).ToList();
         lesson.Flashcards = (request.Flashcards ?? []).Select(f => new Flashcard { Front = f.Front, Back = f.Back }).ToList();
         lesson.QuizQuestions = (request.Quiz ?? [])
             .Select(q => new QuizQuestion { Text = q.Text, Options = q.Options, CorrectOption = q.CorrectOption }).ToList();

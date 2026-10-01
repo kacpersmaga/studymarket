@@ -70,6 +70,32 @@ namespace StudyMarket.Api.Data.Migrations
                     b.ToTable("Courses");
                 });
 
+            modelBuilder.Entity("StudyMarket.Api.Domain.Exercise", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Solution")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.ToTable("Exercises");
+                });
+
             modelBuilder.Entity("StudyMarket.Api.Domain.Flashcard", b =>
                 {
                     b.Property<int>("Id")
@@ -116,6 +142,9 @@ namespace StudyMarket.Api.Data.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("VideoUrl")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -284,6 +313,15 @@ namespace StudyMarket.Api.Data.Migrations
                     b.Navigation("Author");
                 });
 
+            modelBuilder.Entity("StudyMarket.Api.Domain.Exercise", b =>
+                {
+                    b.HasOne("StudyMarket.Api.Domain.Lesson", null)
+                        .WithMany("Exercises")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("StudyMarket.Api.Domain.Flashcard", b =>
                 {
                     b.HasOne("StudyMarket.Api.Domain.Lesson", null)
@@ -363,6 +401,8 @@ namespace StudyMarket.Api.Data.Migrations
 
             modelBuilder.Entity("StudyMarket.Api.Domain.Lesson", b =>
                 {
+                    b.Navigation("Exercises");
+
                     b.Navigation("Flashcards");
 
                     b.Navigation("QuizQuestions");

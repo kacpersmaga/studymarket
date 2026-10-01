@@ -93,10 +93,11 @@ public class CourseTests(ApiFactory api)
         var creator = await api.CreateClientAsync(Role.Creator);
         var (_, lessonId) = await CreateCourseAsync(creator);
 
-        await creator.PutAsJsonAsync($"/api/lessons/{lessonId}", SampleLesson with { Flashcards = [], Quiz = [SampleLesson.Quiz![0]] });
+        await creator.PutAsJsonAsync($"/api/lessons/{lessonId}", SampleLesson with { Flashcards = [], Exercises = [], Quiz = [SampleLesson.Quiz![0]] });
         var lesson = await creator.GetFromJsonAsync<LessonDetails>($"/api/lessons/{lessonId}");
 
         Assert.Empty(lesson!.Flashcards);
+        Assert.Empty(lesson.Exercises);
         Assert.Single(lesson.Quiz);
         Assert.Equal(1, lesson.Quiz[0].CorrectOption); // autor widzi poprawne odpowiedzi
     }
@@ -121,6 +122,8 @@ public class CourseTests(ApiFactory api)
         (await api.SendStripeEventAsync(order.Id)).EnsureSuccessStatusCode();
         var lesson = await student.GetFromJsonAsync<LessonDetails>($"/api/lessons/{lessonId}");
         Assert.All(lesson!.Quiz, q => Assert.Null(q.CorrectOption));
+        Assert.Equal("https://youtu.be/abc", lesson.VideoUrl);
+        Assert.Equal("36 g / 18 g/mol = 2 mol", lesson.Exercises.Single().Solution);
 
         // Quiz: jedna z dwóch odpowiedzi poprawna.
         var answers = new QuizSubmission(new() { [lesson.Quiz[0].Id] = 1, [lesson.Quiz[1].Id] = 1 });

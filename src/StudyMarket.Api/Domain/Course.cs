@@ -37,9 +37,11 @@ public class Lesson
     public Module Module { get; set; } = null!;
     public required string Title { get; set; }
     public string Content { get; set; } = "";  // notatka (Markdown)
+    public string? VideoUrl { get; set; }      // link do filmu (np. YouTube/Vimeo) - platforma nie hostuje wideo
     public int Position { get; set; }
     public List<Flashcard> Flashcards { get; set; } = [];
     public List<QuizQuestion> QuizQuestions { get; set; } = [];
+    public List<Exercise> Exercises { get; set; } = [];
 
     // answers: identyfikator pytania -> indeks wybranej odpowiedzi.
     public int CountCorrectAnswers(IReadOnlyDictionary<int, int> answers) =>
@@ -52,6 +54,15 @@ public class Flashcard
     public int LessonId { get; set; }
     public required string Front { get; set; }
     public required string Back { get; set; }
+}
+
+// Zadanie do samodzielnego rozwiązania (np. zadanie maturalne) z rozwiązaniem wzorcowym do samosprawdzenia.
+public class Exercise
+{
+    public int Id { get; set; }
+    public int LessonId { get; set; }
+    public required string Text { get; set; }
+    public required string Solution { get; set; }
 }
 
 public class QuizQuestion
