@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Flashcard> Flashcards => Set<Flashcard>();
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
+    public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<LessonProgress> LessonProgress => Set<LessonProgress>();
 

@@ -66,6 +66,7 @@ app.MapScalarApiReference();    // /scalar - interaktywna dokumentacja
 app.MapAuthEndpoints();
 app.MapCourseEndpoints();
 app.MapContentEndpoints();
+app.MapAttachmentEndpoints();
 app.MapOrderEndpoints();
 app.MapPaymentEndpoints();
 app.MapProgressEndpoints();

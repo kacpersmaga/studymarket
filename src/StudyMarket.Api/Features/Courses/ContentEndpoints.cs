@@ -39,7 +39,7 @@ public record QuizQuestionDto(int Id, string Text, List<string> Options, int? Co
 // Rozwiązania zadań są zwracane - służą do samosprawdzenia (frontend pokazuje je na żądanie).
 public record LessonDetails(
     int Id, int CourseId, string Title, string Content, string? VideoUrl, int Position,
-    List<FlashcardDto> Flashcards, List<QuizQuestionDto> Quiz, List<ExerciseDto> Exercises);
+    List<FlashcardDto> Flashcards, List<QuizQuestionDto> Quiz, List<ExerciseDto> Exercises, List<AttachmentDto> Attachments);
 
 public record IdResponse(int Id);
 
@@ -109,7 +109,7 @@ public static class ContentEndpoints
     }
 
     static async Task<Results<Ok<LessonDetails>, NotFound, ForbidHttpResult>> GetLesson(
-        int id, AppDbContext db, ClaimsPrincipal user)
+        int id, AppDbContext db, ClaimsPrincipal user, IConfiguration config)
     {
         var lesson = await LoadLesson(id, db);
         if (lesson is null) return TypedResults.NotFound();
@@ -117,12 +117,16 @@ public static class ContentEndpoints
         if (!await user.CanViewContentAsync(course, db)) return TypedResults.Forbid();
 
         var canEdit = user.CanEdit(course);
+        var attachments = (await db.Attachments.Where(a => a.LessonId == id) // bez wczytywania zawartości plików
+                .Select(a => new { a.Id, a.FileName, a.ContentType, a.Data.Length }).ToListAsync())
+            .Select(a => AttachmentEndpoints.ToDto(a.Id, a.FileName, a.ContentType, a.Length, config)).ToList();
 
         return TypedResults.Ok(new LessonDetails(lesson.Id, course.Id, lesson.Title, lesson.Content, lesson.VideoUrl, lesson.Position,
             lesson.Flashcards.Select(f => new FlashcardDto(f.Front, f.Back)).ToList(),
             lesson.QuizQuestions.OrderBy(q => q.Id)
                 .Select(q => new QuizQuestionDto(q.Id, q.Text, q.Options, canEdit ? q.CorrectOption : null)).ToList(),
-            lesson.Exercises.OrderBy(e => e.Id).Select(e => new ExerciseDto(e.Text, e.Solution)).ToList()));
+            lesson.Exercises.OrderBy(e => e.Id).Select(e => new ExerciseDto(e.Text, e.Solution)).ToList(),
+            attachments));
     }
 
     static async Task<Results<NoContent, NotFound, ForbidHttpResult>> UpdateLesson(

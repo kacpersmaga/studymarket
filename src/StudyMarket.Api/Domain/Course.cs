@@ -65,6 +65,17 @@ public class Exercise
     public required string Solution { get; set; }
 }
 
+// Plik dołączony do lekcji (PDF, obraz). Zawartość trzymana w bazie - patrz README.
+public class Attachment
+{
+    public int Id { get; set; }
+    public int LessonId { get; set; }
+    public Lesson Lesson { get; set; } = null!;
+    public required string FileName { get; set; }
+    public required string ContentType { get; set; }
+    public required byte[] Data { get; set; }
+}
+
 public class QuizQuestion
 {
     public int Id { get; set; }
