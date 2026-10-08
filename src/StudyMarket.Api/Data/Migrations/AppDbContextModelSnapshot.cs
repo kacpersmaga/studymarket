@@ -53,6 +53,36 @@ namespace StudyMarket.Api.Data.Migrations
                     b.ToTable("Attachments");
                 });
 
+            modelBuilder.Entity("StudyMarket.Api.Domain.Comment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Comments");
+                });
+
             modelBuilder.Entity("StudyMarket.Api.Domain.Course", b =>
                 {
                     b.Property<int>("Id")
@@ -300,6 +330,30 @@ namespace StudyMarket.Api.Data.Migrations
                     b.ToTable("QuizQuestions");
                 });
 
+            modelBuilder.Entity("StudyMarket.Api.Domain.Review", b =>
+                {
+                    b.Property<int>("CourseId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.HasKey("CourseId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("StudyMarket.Api.Domain.User", b =>
                 {
                     b.Property<int>("Id")
@@ -341,6 +395,25 @@ namespace StudyMarket.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("StudyMarket.Api.Domain.Comment", b =>
+                {
+                    b.HasOne("StudyMarket.Api.Domain.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StudyMarket.Api.Domain.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("StudyMarket.Api.Domain.Course", b =>
@@ -435,9 +508,28 @@ namespace StudyMarket.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("StudyMarket.Api.Domain.Review", b =>
+                {
+                    b.HasOne("StudyMarket.Api.Domain.Course", null)
+                        .WithMany("Reviews")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StudyMarket.Api.Domain.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StudyMarket.Api.Domain.Course", b =>
                 {
                     b.Navigation("Modules");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("StudyMarket.Api.Domain.Lesson", b =>

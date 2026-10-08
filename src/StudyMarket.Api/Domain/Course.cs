@@ -18,6 +18,7 @@ public class Course
     public bool IsPublished { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<Module> Modules { get; set; } = [];
+    public List<Review> Reviews { get; set; } = [];
 }
 
 public class Module

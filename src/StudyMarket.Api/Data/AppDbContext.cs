@@ -15,6 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<LessonProgress> LessonProgress => Set<LessonProgress>();
+    public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder builder)
     {
@@ -26,6 +28,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         builder.Entity<User>().HasIndex(u => u.Email).IsUnique();
         builder.Entity<LessonProgress>().HasKey(p => new { p.UserId, p.LessonId });
+        builder.Entity<Review>().HasKey(r => new { r.CourseId, r.UserId });
 
         // Kursu, który ktoś kupił, nie wolno usunąć razem z historią zamówień.
         builder.Entity<Order>().HasOne(o => o.Course).WithMany().OnDelete(DeleteBehavior.Restrict);

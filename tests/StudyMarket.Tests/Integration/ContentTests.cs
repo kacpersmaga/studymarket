@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using StudyMarket.Api.Domain;
+using StudyMarket.Api.Features.Community;
 using StudyMarket.Api.Features.Courses;
 using StudyMarket.Api.Features.Progress;
 using static StudyMarket.Tests.Integration.TestData;
@@ -89,5 +90,21 @@ public class ContentTests(ApiFactory api)
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.PostAsJsonAsync($"/api/lessons/{lessonId}/quiz", new QuizSubmission([]))).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/api/courses/{courseId}/progress")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await api.CreateClient().GetAsync($"/api/lessons/{lessonId}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Course_author_moderates_comments_other_buyers_cannot()
+    {
+        var creator = await api.CreateClientAsync(Role.Creator);
+        var (courseId, lessonId) = await CreateCourseAsync(creator);
+        var author = await api.CreateClientAsync(Role.Student);
+        var otherBuyer = await api.CreateClientAsync(Role.Student);
+        await PurchaseAsync(api, author, courseId);
+        await PurchaseAsync(api, otherBuyer, courseId);
+        var comment = await (await author.PostAsJsonAsync($"/api/lessons/{lessonId}/comments", new CommentRequest("Reklama!")))
+            .Content.ReadFromJsonAsync<CommentDto>();
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await otherBuyer.DeleteAsync($"/api/comments/{comment!.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await creator.DeleteAsync($"/api/comments/{comment.Id}")).StatusCode);
     }
 }

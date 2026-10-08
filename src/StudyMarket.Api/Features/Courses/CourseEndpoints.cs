@@ -16,12 +16,13 @@ public record CourseRequest(
     [Range(2, 10_000)] decimal Price); // 2 zł to minimalna kwota płatności u operatora (Stripe, PLN)
 
 public record CourseSummary(
-    int Id, string Title, string Subject, SchoolLevel Level, int? Grade, decimal Price, string AuthorName, bool IsPublished);
+    int Id, string Title, string Subject, SchoolLevel Level, int? Grade, decimal Price, string AuthorName, bool IsPublished,
+    double? AverageRating, int ReviewCount);
 
 // CanEdit i HasAccess mówią frontendowi, czy pokazać przycisk "Edytuj", "Ucz się" czy "Kup".
 public record CourseDetails(
     int Id, string Title, string Description, string Subject, SchoolLevel Level, int? Grade, decimal Price,
-    string AuthorName, bool IsPublished, bool CanEdit, bool HasAccess,
+    string AuthorName, bool IsPublished, double? AverageRating, int ReviewCount, bool CanEdit, bool HasAccess,
     List<ModuleOutline> Modules);
 
 public record ModuleOutline(int Id, string Title, int Position, List<LessonOutline> Lessons);
@@ -70,6 +71,7 @@ public static class CourseEndpoints
         var course = await db.Courses
             .Include(c => c.Author)
             .Include(c => c.Modules).ThenInclude(m => m.Lessons)
+            .Include(c => c.Reviews)
             .AsSplitQuery()
             .SingleOrDefaultAsync(c => c.Id == id);
         if (course is null || (!course.IsPublished && !user.CanEdit(course)))
@@ -83,7 +85,7 @@ public static class CourseEndpoints
 
         return TypedResults.Ok(new CourseDetails(course.Id, course.Title, course.Description, course.Subject, course.Level,
             course.Grade, course.Price, course.Author.DisplayName, course.IsPublished,
-            canEdit, hasAccess, modules));
+            course.Reviews.Count == 0 ? null : course.Reviews.Average(r => r.Rating), course.Reviews.Count, canEdit, hasAccess, modules));
     }
 
     static async Task<Created<CourseSummary>> CreateCourse(CourseRequest request, AppDbContext db, ClaimsPrincipal user)
@@ -148,5 +150,6 @@ public static class CourseEndpoints
     }
 
     static readonly System.Linq.Expressions.Expression<Func<Course, CourseSummary>> ToSummary = c =>
-        new CourseSummary(c.Id, c.Title, c.Subject, c.Level, c.Grade, c.Price, c.Author.DisplayName, c.IsPublished);
+        new CourseSummary(c.Id, c.Title, c.Subject, c.Level, c.Grade, c.Price, c.Author.DisplayName, c.IsPublished,
+            c.Reviews.Average(r => (double?)r.Rating), c.Reviews.Count);
 }
