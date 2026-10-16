@@ -22,3 +22,17 @@ public class Review
     public string? Text { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+
+public enum ReportTarget { Course, Comment }
+
+// Zgłoszenie nielegalnej lub niewłaściwej treści (mechanizm wymagany przez DSA, art. 16).
+public class Report
+{
+    public int Id { get; set; }
+    public int ReporterId { get; set; }
+    public ReportTarget TargetType { get; set; }
+    public int TargetId { get; set; }
+    public required string Reason { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ResolvedAt { get; set; }
+}

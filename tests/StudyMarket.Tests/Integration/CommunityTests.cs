@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using StudyMarket.Api.Domain;
 using StudyMarket.Api.Features.Community;
 using StudyMarket.Api.Features.Courses;
+using StudyMarket.Api.Features.Moderation;
 using static StudyMarket.Tests.Integration.TestData;
 
 namespace StudyMarket.Tests.Integration;
@@ -97,5 +98,23 @@ public class CommunityTests(ApiFactory api)
         var response = await creator.PostAsync($"/api/lessons/{lessonId}/attachments", new MultipartFormDataContent { { exe, "file", "wirus.exe" } });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Reported_content_reaches_admin_only()
+    {
+        var (courseId, _) = await CreateCourseAsync(await api.CreateClientAsync(Role.Creator));
+        var student = await api.CreateClientAsync(Role.Student);
+        var admin = await api.CreateClientAsync(Role.Admin);
+
+        await student.PostAsJsonAsync("/api/reports", new ReportRequest(ReportTarget.Course, courseId, "Skany cudzego podręcznika"), ApiFactory.Json);
+        var byStudent = await student.GetAsync("/api/admin/reports");
+        var reports = await admin.GetFromJsonAsync<List<ReportDto>>("/api/admin/reports", ApiFactory.Json);
+        var report = reports!.Single(r => r.TargetId == courseId);
+        await admin.PostAsync($"/api/admin/reports/{report.Id}/resolve", null);
+        var afterResolve = await admin.GetFromJsonAsync<List<ReportDto>>("/api/admin/reports", ApiFactory.Json);
+
+        Assert.Equal(HttpStatusCode.Forbidden, byStudent.StatusCode);
+        Assert.DoesNotContain(afterResolve!, r => r.Id == report.Id);
     }
 }

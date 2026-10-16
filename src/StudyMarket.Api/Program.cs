@@ -10,6 +10,7 @@ using StudyMarket.Api.Domain;
 using StudyMarket.Api.Features.Auth;
 using StudyMarket.Api.Features.Community;
 using StudyMarket.Api.Features.Courses;
+using StudyMarket.Api.Features.Moderation;
 using StudyMarket.Api.Features.Orders;
 using StudyMarket.Api.Features.Progress;
 
@@ -72,5 +73,6 @@ app.MapCommunityEndpoints();
 app.MapOrderEndpoints();
 app.MapPaymentEndpoints();
 app.MapProgressEndpoints();
+app.MapModerationEndpoints();
 
 app.Run();

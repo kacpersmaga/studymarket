@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LessonProgress> LessonProgress => Set<LessonProgress>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Report> Reports => Set<Report>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder builder)
     {
@@ -35,5 +36,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         builder.Entity<Order>().HasOne<User>().WithMany().HasForeignKey(o => o.UserId);
         builder.Entity<LessonProgress>().HasOne<User>().WithMany().HasForeignKey(p => p.UserId);
         builder.Entity<LessonProgress>().HasOne<Lesson>().WithMany().HasForeignKey(p => p.LessonId);
+        builder.Entity<Report>().HasOne<User>().WithMany().HasForeignKey(r => r.ReporterId);
     }
 }
