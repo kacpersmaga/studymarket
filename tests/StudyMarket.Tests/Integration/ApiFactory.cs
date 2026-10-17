@@ -47,8 +47,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Stripe:WebhookSecret", WebhookSecret);
     }
 
-    public static RegisterRequest NewUser(Role role = Role.Student) =>
-        new($"{Guid.NewGuid()}@test.pl", Password, "Jan Test", role);
+    public static RegisterRequest NewUser(Role role = Role.Student, int age = 20) =>
+        new($"{Guid.NewGuid()}@test.pl", Password, "Jan Test", role, DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-age), true);
 
     // Rejestruje nowego użytkownika i zwraca klienta HTTP z jego tokenem.
     public async Task<HttpClient> CreateClientAsync(Role role)

@@ -9,6 +9,17 @@ namespace StudyMarket.Tests.Integration;
 public class OrderTests(ApiFactory api)
 {
     [Fact]
+    public async Task Consent_to_immediate_access_is_required()
+    {
+        var (courseId, _) = await CreateCourseAsync(await api.CreateClientAsync(Role.Creator));
+        var student = await api.CreateClientAsync(Role.Student);
+
+        var response = await student.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId, false));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Course_cannot_be_bought_twice_or_by_its_author()
     {
         var creator = await api.CreateClientAsync(Role.Creator);
@@ -16,8 +27,8 @@ public class OrderTests(ApiFactory api)
         var student = await api.CreateClientAsync(Role.Student);
 
         await OrderAsync(student, courseId);
-        var second = await student.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId));
-        var byAuthor = await creator.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId));
+        var second = await student.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId, true));
+        var byAuthor = await creator.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId, true));
 
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, byAuthor.StatusCode);

@@ -31,7 +31,7 @@ public static class TestData
 
     public static async Task<OrderDto> OrderAsync(HttpClient buyer, int courseId)
     {
-        var response = await buyer.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId));
+        var response = await buyer.PostAsJsonAsync("/api/orders", new CreateOrderRequest(courseId, true));
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<OrderDto>(ApiFactory.Json))!;
     }

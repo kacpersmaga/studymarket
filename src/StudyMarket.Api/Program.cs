@@ -7,6 +7,7 @@ using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using StudyMarket.Api.Data;
 using StudyMarket.Api.Domain;
+using StudyMarket.Api.Features.Account;
 using StudyMarket.Api.Features.Auth;
 using StudyMarket.Api.Features.Community;
 using StudyMarket.Api.Features.Courses;
@@ -66,6 +67,7 @@ app.MapOpenApi();               // /openapi/v1.json
 app.MapScalarApiReference();    // /scalar - interaktywna dokumentacja
 
 app.MapAuthEndpoints();
+app.MapAccountEndpoints();
 app.MapCourseEndpoints();
 app.MapContentEndpoints();
 app.MapAttachmentEndpoints();

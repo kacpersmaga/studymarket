@@ -65,3 +65,15 @@ public class CommissionTests
     public void Fee_is_rounded_to_grosze(decimal price, decimal percent, decimal expected) =>
         Assert.Equal(expected, Order.CalculateFee(price, percent));
 }
+
+public class AgeTests
+{
+    private static readonly DateOnly Today = new(2026, 11, 13);
+
+    [Theory]
+    [InlineData("2008-11-13", 18)] // urodziny dzisiaj
+    [InlineData("2008-11-14", 17)] // urodziny jutro
+    [InlineData("2013-01-01", 13)]
+    public void Age_is_counted_in_full_years(string birthDate, int expected) =>
+        Assert.Equal(expected, new User { Email = "", DisplayName = "", BirthDate = DateOnly.Parse(birthDate) }.AgeOn(Today));
+}

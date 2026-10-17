@@ -15,6 +15,10 @@ public class Order
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? PaidAt { get; set; }
 
+    // Zgoda kupującego na natychmiastowy dostęp do treści cyfrowej, z utratą prawa odstąpienia
+    // od umowy (art. 38 pkt 13 ustawy o prawach konsumenta). Zapisujemy moment jej udzielenia.
+    public DateTime ImmediateAccessConsentAt { get; set; }
+
     public static decimal CalculateFee(decimal price, decimal commissionPercent) =>
         Math.Round(price * commissionPercent / 100, 2, MidpointRounding.AwayFromZero);
 }

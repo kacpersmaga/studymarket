@@ -6,7 +6,7 @@ using StudyMarket.Api.Domain;
 
 namespace StudyMarket.Api.Features.Orders;
 
-public record CreateOrderRequest(int CourseId);
+public record CreateOrderRequest(int CourseId, bool ConsentToImmediateAccess);
 
 public record OrderDto(int Id, int CourseId, string CourseTitle, decimal Price, OrderStatus Status, DateTime CreatedAt, DateTime? PaidAt);
 
@@ -40,6 +40,8 @@ public static class OrderEndpoints
         var userId = user.GetUserId();
         var course = await db.Courses.FindAsync(request.CourseId);
         if (course is null || !course.IsPublished) return TypedResults.NotFound();
+        if (!request.ConsentToImmediateAccess)
+            return TypedResults.Problem("Wymagana zgoda na natychmiastowy dostęp do treści cyfrowej.", statusCode: 400);
         if (course.AuthorId == userId)
             return TypedResults.Problem("Nie można kupić własnego kursu.", statusCode: 409);
         if (await db.Orders.AnyAsync(o => o.UserId == userId && o.CourseId == course.Id))
@@ -49,6 +51,7 @@ public static class OrderEndpoints
         {
             UserId = userId, CourseId = course.Id, Price = course.Price, Status = OrderStatus.Pending,
             PlatformFee = Order.CalculateFee(course.Price, config.GetValue<decimal>("Platform:CommissionPercent")),
+            ImmediateAccessConsentAt = DateTime.UtcNow,
         };
         db.Orders.Add(order);
         await db.SaveChangesAsync();

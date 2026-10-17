@@ -11,7 +11,9 @@ public record RegisterRequest(
     [Required, EmailAddress] string Email,
     [Required, MinLength(8)] string Password,
     [Required, MaxLength(100)] string DisplayName,
-    [AllowedValues(Role.Student, Role.Creator)] Role Role); // roli Admin nie można nadać sobie samemu
+    [AllowedValues(Role.Student, Role.Creator)] Role Role, // roli Admin nie można nadać sobie samemu
+    DateOnly BirthDate,
+    [AllowedValues(true)] bool AcceptTerms);               // akceptacja regulaminu i polityki prywatności
 
 public record LoginRequest([Required] string Email, [Required] string Password);
 
@@ -33,8 +35,14 @@ public static class AuthEndpoints
         var user = new User
         {
             Email = email, DisplayName = request.DisplayName, Role = request.Role,
+            BirthDate = request.BirthDate, TermsAcceptedAt = DateTime.UtcNow,
         };
 
+        var age = user.AgeOn(DateOnly.FromDateTime(DateTime.UtcNow));
+        if (age < User.MinimumAge)
+            return TypedResults.Problem($"Rejestracja jest możliwa od {User.MinimumAge} roku życia.", statusCode: 400);
+        if (user.Role == Role.Creator && age < User.MinimumCreatorAge)
+            return TypedResults.Problem($"Konto twórcy wymaga ukończenia {User.MinimumCreatorAge} lat.", statusCode: 400);
         if (await db.Users.AnyAsync(u => u.Email == email))
             return TypedResults.Conflict();
 
@@ -48,7 +56,7 @@ public static class AuthEndpoints
     static async Task<Results<Ok<AuthResponse>, UnauthorizedHttpResult>> Login(
         LoginRequest request, AppDbContext db, IPasswordHasher<User> hasher, IConfiguration config)
     {
-        var user = await db.Users.SingleOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant());
+        var user = await db.Users.SingleOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant() && !u.IsDeleted);
         if (user is null || hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             return TypedResults.Unauthorized();
 

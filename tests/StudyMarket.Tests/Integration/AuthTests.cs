@@ -36,6 +36,18 @@ public class AuthTests(ApiFactory api)
         Assert.Equal(HttpStatusCode.BadRequest, (await Register(ApiFactory.NewUser(Role.Admin))).StatusCode);
 
     [Fact]
+    public async Task Terms_must_be_accepted() =>
+        Assert.Equal(HttpStatusCode.BadRequest, (await Register(ApiFactory.NewUser() with { AcceptTerms = false })).StatusCode);
+
+    [Theory]
+    [InlineData(Role.Student, 12, HttpStatusCode.BadRequest)] // poniżej 13 lat
+    [InlineData(Role.Student, 14, HttpStatusCode.OK)]         // niepełnoletni może kupować i się uczyć
+    [InlineData(Role.Creator, 17, HttpStatusCode.BadRequest)] // ale nie może sprzedawać
+    [InlineData(Role.Creator, 18, HttpStatusCode.OK)]
+    public async Task Age_limits_are_enforced(Role role, int age, HttpStatusCode expected) =>
+        Assert.Equal(expected, (await Register(ApiFactory.NewUser(role, age))).StatusCode);
+
+    [Fact]
     public async Task Wrong_password_is_rejected()
     {
         var user = ApiFactory.NewUser();
