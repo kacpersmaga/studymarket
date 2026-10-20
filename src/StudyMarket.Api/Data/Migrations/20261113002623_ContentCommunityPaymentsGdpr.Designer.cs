@@ -13,8 +13,8 @@ using StudyMarket.Api.Data;
 namespace StudyMarket.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261113153045_AddReports")]
-    partial class AddReports
+    [Migration("20261113002623_ContentCommunityPaymentsGdpr")]
+    partial class ContentCommunityPaymentsGdpr
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -277,6 +277,9 @@ namespace StudyMarket.Api.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime>("ImmediateAccessConsentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -400,6 +403,9 @@ namespace StudyMarket.Api.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateOnly>("BirthDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -408,6 +414,9 @@ namespace StudyMarket.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -415,6 +424,9 @@ namespace StudyMarket.Api.Data.Migrations
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("TermsAcceptedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
