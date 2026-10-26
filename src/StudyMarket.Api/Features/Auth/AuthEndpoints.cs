@@ -23,7 +23,8 @@ public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/auth").WithTags("Auth");
+        // Limit prób na adres IP chroni przed zgadywaniem haseł i masowym zakładaniem kont przez boty.
+        var group = app.MapGroup("/api/auth").WithTags("Auth").RequireRateLimiting("auth");
         group.MapPost("/register", Register);
         group.MapPost("/login", Login);
     }

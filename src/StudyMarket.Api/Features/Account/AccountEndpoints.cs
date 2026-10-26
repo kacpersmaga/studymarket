@@ -28,7 +28,7 @@ public static class AccountEndpoints
     {
         var group = app.MapGroup("/api/me").WithTags("Account (RODO)").RequireAuthorization();
         group.MapGet("/", GetProfile);
-        group.MapPut("/password", ChangePassword);
+        group.MapPut("/password", ChangePassword).RequireRateLimiting("auth"); // zgadywanie obecnego hasła jak przy logowaniu
         group.MapGet("/export", Export);
         group.MapDelete("/", DeleteAccount);
     }

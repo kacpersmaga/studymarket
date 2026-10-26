@@ -45,6 +45,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.UseSetting("ConnectionStrings:Default", ConnectionString);
         builder.UseSetting("Stripe:WebhookSecret", WebhookSecret);
+        builder.UseSetting("RateLimit:RequestsPerMinute", "100000"); // testy wysyłają setki żądań z jednego "IP"
+        builder.UseSetting("RateLimit:AuthRequestsPerMinute", "100000");
     }
 
     public static RegisterRequest NewUser(Role role = Role.Student, int age = 20) =>
