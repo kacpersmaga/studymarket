@@ -45,6 +45,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.UseSetting("ConnectionStrings:Default", ConnectionString);
         builder.UseSetting("Stripe:WebhookSecret", WebhookSecret);
+        builder.UseSetting("SeedDemoData", "false"); // każdy test tworzy własne dane
         builder.UseSetting("RateLimit:RequestsPerMinute", "100000"); // testy wysyłają setki żądań z jednego "IP"
         builder.UseSetting("RateLimit:AuthRequestsPerMinute", "100000");
     }

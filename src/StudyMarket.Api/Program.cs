@@ -43,6 +43,10 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("auth", http => PerIpLimit(http, config.GetValue<int>("RateLimit:AuthRequestsPerMinute")));
 });
 
+// /health - sprawdza, czy API działa i ma połączenie z bazą. Używa go hosting / Docker do automatycznego
+// restartu i monitoring do powiadomienia o awarii.
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+
 builder.Services.AddValidation();     // walidacja atrybutów [Required], [Range]... w Minimal API (.NET 10)
 builder.Services.AddProblemDetails(); // błędy w standardowym formacie RFC 9457
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -73,6 +77,8 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+    if (app.Environment.IsDevelopment() && config.GetValue<bool>("SeedDemoData"))
+        await DemoData.SeedAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>());
 }
 
 // Za reverse proxy (nginx, Cloudflare) wszystkie żądania przychodzą z adresu proxy. Bez tego limit żądań
@@ -91,6 +97,7 @@ app.UseStatusCodePages();
 app.UseCors();
 app.UseRateLimiter();
 
+app.MapHealthChecks("/health"); // "Healthy" (200) albo "Unhealthy" (503)
 app.MapOpenApi();               // /openapi/v1.json
 app.MapScalarApiReference();    // /scalar - interaktywna dokumentacja
 
